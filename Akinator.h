@@ -22,6 +22,30 @@
 #define cal element* el_crt = ElementConstructor (str); \
             tree->size += 1;
 
+#define tab for (size_t i_tab = 0; i_tab < num_tab; i_tab++)   \
+                fprintf (tree, "\t");
+
+#define skip_tabs(tabs) size_t tabs = 0;            \
+                        while (str[tabs] == '\t')   \
+                            tabs++;
+
+#define diving(where_to)    where_to = OpenBranch (gt, last_tab + 1, tree); \
+                            if (where_to == nullptr)                        \
+                            {                                               \
+                                ElementDestructor (el);                     \
+                                return nullptr;                             \
+                            }
+
+#define get_string  if (fgets (str, BUF_SIZE, tree) == nullptr) \
+                        return nullptr;                         \
+                    {                                           \
+                        char* no_slash_n = strchr (str, '\n');  \
+                        if (no_slash_n)                         \
+                            *no_slash_n = '\0';                 \
+                    }
+
+const size_t BUF_SIZE = 256;
+
 struct element
 {
     element* prev  = nullptr;
@@ -63,3 +87,11 @@ void Compare (Tree* gt);
 void AddAnswer (Tree* gt, element* elem_now);
 
 void SaveTree (Tree* gt);
+
+int SaveBranch (element* el, FILE* tree, size_t num_tab);
+
+void OpenTree (Tree* gt);
+
+element* OpenBranch (Tree* gt, size_t last_tab, FILE* tree);
+
+int GetNode (char* str, const char symb);

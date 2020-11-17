@@ -10,8 +10,7 @@ int main ()
 
     Tree game_tree = {};
     TreeConstructor (&game_tree);
-
-    InsertHead (&game_tree, "Неизвестно кто");
+    OpenTree (&game_tree);
 
     int game_continue = 1;
 
@@ -22,11 +21,12 @@ int main ()
                 "2 - Определение\n"
                 "3 - Сравнение\n"
                 "4 - Графическое представление результата\n"
-                "5 - Выход\n");
+                "5 - Сделать сохранение\n"
+                "6 - Выход\n");
 
         int mode = -1;
-        char inp[256] = "";
-        gets_s (inp, 256);
+        char inp[BUF_SIZE] = "";
+        gets_s (inp, BUF_SIZE);
         sscanf (inp, "%d", &mode);
 
         switch (mode)
@@ -44,6 +44,9 @@ int main ()
                 CreateDump (&game_tree);
                 break;
             case (5):
+                SaveTree (&game_tree);
+                break;
+            case (6):
                 printf ("Выход из игры...");
                 game_continue = 0;
                 break;
@@ -225,12 +228,12 @@ void Guessing (Tree* gt)
 
     while (1)
     {
-        char ans[256] = "";
+        char ans[BUF_SIZE] = "";
 
         if (elem_now->left == nullptr && elem_now->right == nullptr)
         {
             printf ("Это %s?\n", elem_now->str);
-            gets_s (ans, 256);
+            gets_s (ans, BUF_SIZE);
             
             if (strcmp (ans, "да") == 0)
             {
@@ -255,7 +258,7 @@ void Guessing (Tree* gt)
         }
 
         printf ("Это можно охарактеризовать как \"%s\"?\n", elem_now->str);
-        gets_s (ans, 256);
+        gets_s (ans, BUF_SIZE);
 
         if (strcmp (ans, "да") == 0)
         {
@@ -281,15 +284,25 @@ void AddAnswer (Tree* gt, element* elem_now)
     assert (gt);
     assert (elem_now);
 
-    printf ("\n""А кто это был тогда?\n");
-    char new_item[256] = "";
-    gets_s (new_item, 256);
+    char new_item[BUF_SIZE] = "";
+    do
+    {
+        printf ("\n""А кто это был тогда? (знак `?` запрещён)\n");
+        gets_s (new_item, BUF_SIZE);
+    }
+    while (strchr (new_item, '?'));
+
     InsertRight (gt, elem_now, new_item);
 
-    printf ("А чем это отличается от %s?\n"
-            "Он (она, оно, они)...\n", elem_now->str);
-    gets_s (new_item, 256);
-    element* new_elem = ElementConstructor (new_item);
+    do
+    {
+        printf ("А чем %s отличается от %s?\n"
+                "Он (она, оно, они)... (знак `?` запрещён)\n",
+                new_item, elem_now->str);
+        gets_s (new_item, BUF_SIZE);
+    }
+    while (strchr (new_item, '?'));
+
     InsertLeft (gt, elem_now, new_item);
 
     char* str_swap      = elem_now->str;
@@ -315,5 +328,142 @@ void SaveTree (Tree* gt)
     assert (gt);
 
     FILE* tree = fopen ("Graph/tree.txt", "w");
+    assert (tree);
 
+    fprintf (tree, "{DESCR}\n{version 1.0}\n{RUS}\n");
+    if (SaveBranch (gt->head, tree, 0))
+        printf ("Ошибка, сохранения. Плак...\n");
+    else
+        printf ("Сохранение прошло успешно!\n");
+
+    fclose (tree);
+    return;
+}
+
+int SaveBranch (element* el, FILE* tree, size_t num_tab)
+{
+    assert (el);
+    assert (tree);
+    
+    tab;
+    fprintf (tree, "[\n");
+    num_tab++;
+
+    if (el->left != nullptr && el->right != nullptr)
+    {
+        tab;
+        fprintf (tree, "?%s?\n", el->str);
+        if (SaveBranch (el->right, tree, num_tab))
+            return 1;
+        if (SaveBranch (el->left,  tree, num_tab))
+            return 1;
+    }
+    else if (el->left == nullptr && el->right == nullptr)
+    {
+        tab;
+        fprintf (tree, "`%s`\n", el->str);
+    }
+    else
+        return 1;
+
+    num_tab--;
+    tab;
+    fprintf (tree, "]\n");
+    return 0;
+}
+
+void OpenTree (Tree* gt)
+{
+    assert (gt);
+    FILE* tree = fopen ("Graph/tree.txt", "r");
+    assert (tree);
+
+    char str[BUF_SIZE] = "";
+    for (size_t skip = 0; skip < 3; skip++)
+        fgets (str, BUF_SIZE, tree);
+    
+    gt->head = OpenBranch (gt, 0, tree);
+    if (gt->head == nullptr)
+    {
+        printf ("Внимание! Файл дерева или повреждён, или пуст!\n");
+        gt->head = ElementConstructor ("Неизвестно кто");
+    }
+
+    fclose (tree);
+    return;
+}
+
+element* OpenBranch (Tree* gt, size_t last_tab, FILE* tree)
+{
+    assert (gt);
+
+    char str[BUF_SIZE] = "";
+    get_string;
+    
+    // Строгая табуляция, при желании можно убрать проверку на количество табов и
+    // добавить в skip_tabs другие разделители, помимо '\t'
+
+    skip_tabs (tab1);
+    if (tab1 != last_tab || strcmp (str + tab1, "["))
+        return nullptr;
+
+    get_string;
+    skip_tabs (node);
+    if (node != tab1 + 1)
+        return nullptr;
+
+    element* el = nullptr;
+
+    if (str[node] == '?')
+    {
+        if (GetNode (str + node, '?'))
+            return nullptr;
+        
+        el = ElementConstructor (str + node + 1);
+
+        diving (el->right);
+        diving (el->left);
+
+        el->right->prev = el;
+        el->left ->prev = el;
+    }
+    else if (str[node] == '`')
+    {
+        if (GetNode (str + node, '`'))
+            return nullptr;
+        el = ElementConstructor (str + node + 1);
+    }
+    else
+        return nullptr;
+
+    get_string;
+    skip_tabs (tab2);
+    if (tab1 != tab2 || strcmp (str + tab2, "]"))
+    {
+        Tree free_tree = {};
+        TreeConstructor (&free_tree);
+        free_tree.head = el;
+        TreeDestructor (&free_tree);
+        return nullptr;
+    }
+    gt->size += 1;
+    return el;
+}
+
+int GetNode (char* str, const char symb)
+{
+    assert (str);
+
+    if (*str != symb)
+        return 1;
+
+    char* check = strchr (str + 1, symb);
+
+    if (check == nullptr || check[1] != '\0')
+        return 1;
+
+    *str   = '\0';
+    *check = '\0';
+
+    return 0;
 }
