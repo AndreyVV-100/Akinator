@@ -4,6 +4,7 @@
 #include <string.h>
 #include <locale.h>
 #include <windows.h>
+#include <sapi.h>
 
 #pragma warning (disable : 4996)
 
@@ -100,8 +101,6 @@ void Definition (Tree* gt);
 
 void Compare (Tree* gt);
 
-void AddAnswer (Tree* gt, element* elem_now);
-
 void SaveTree (Tree* gt);
 
 int SaveBranch (element* el, FILE* tree, size_t num_tab);
@@ -112,6 +111,18 @@ element* OpenBranch (Tree* gt, size_t last_tab, FILE* tree);
 
 int GetNode (char* str, const char symb);
 
+int AskObject (element* elem_now, char* ans, Tree* gt);
+
+void AddAnswer (Tree* gt, element* elem_now);
+
+element* AskProperty (element* elem_now, char* ans);
+
 FIND_RES FindElem (const char* str, Stack* stk, element* elem_now);
 
+int AllPropertiesPrint (Stack* stk, const char* who);
+
 int PropertyPrint (element* elem_write, element* elem_help, const char* end);
+
+void Modes23PrintError (FIND_RES result);
+
+void CompareElements (Stack* stk1, Stack* stk2, const char* who1, const char* who2);

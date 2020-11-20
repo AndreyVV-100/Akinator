@@ -217,7 +217,6 @@ int ElementDump (FILE* graph, element* el, size_t* passed_elems, size_t size)
     return 0;
 }
 
-// ToDo: Разбить на функции
 void Guessing (Tree* gt)
 {
     assert (gt);
@@ -234,23 +233,9 @@ void Guessing (Tree* gt)
 
         if (elem_now->left == nullptr && elem_now->right == nullptr)
         {
-            printf ("Это %s?\n", elem_now->str);
-            gets_s (ans, BUF_SIZE);
-            
-            if (strcmp (ans, "да") == 0)
-            {
-                printf ("Оно и верно, я ведь всё могу угадать!\n");
+            if (AskObject (elem_now, ans, gt))
                 return;
-            }
-
-            if (strcmp (ans, "нет") == 0)
-                return AddAnswer (gt, elem_now);
-
-            if (strcmp (ans, "выход") == 0)
-                return;
-
-            printf ("Неопознанная команда!\n");
-            break;
+            continue;
         }
 
         if (elem_now->left == nullptr || elem_now->right == nullptr)
@@ -259,60 +244,10 @@ void Guessing (Tree* gt)
             return;
         }
 
-        printf ("Это можно охарактеризовать как \"%s\"?\n", elem_now->str);
-        gets_s (ans, BUF_SIZE);
-
-        if (strcmp (ans, "да") == 0)
-        {
-            elem_now = elem_now->right;
-            continue;
-        }
-
-        if (strcmp (ans, "нет") == 0)
-        {
-            elem_now = elem_now->left;
-            continue;
-        }
-
-        if (strcmp (ans, "выход") == 0)
-            break;
-
-        printf ("Неопознанная команда!\n");
+        elem_now = AskProperty (elem_now, ans);
+        if (elem_now == nullptr)
+            return;
     }
-}
-
-void AddAnswer (Tree* gt, element* elem_now)
-{
-    assert (gt);
-    assert (elem_now);
-
-    char new_item[BUF_SIZE] = "";
-    do
-    {
-        printf ("\n""А кто это был тогда? (знак `?` запрещён)\n");
-        gets_s (new_item, BUF_SIZE);
-    }
-    while (strchr (new_item, '?'));
-
-    InsertRight (gt, elem_now, new_item);
-
-    do
-    {
-        printf ("А чем %s отличается от %s?\n"
-                "Он (она, оно, они)... (знак `?` запрещён)\n",
-                new_item, elem_now->str);
-        gets_s (new_item, BUF_SIZE);
-    }
-    while (strchr (new_item, '?'));
-
-    InsertLeft (gt, elem_now, new_item);
-
-    char* str_swap      = elem_now->str;
-    elem_now->str       = elem_now->left->str;
-    elem_now->left->str = str_swap;
-
-    printf ("Спасибо, я запомнил!\n");
-    return;
 }
 
 void Definition (Tree* gt)
@@ -331,60 +266,56 @@ void Definition (Tree* gt)
 
     FIND_RES result = FindElem (who, &stk, gt->head);
 
-    switch (result)
-    {
-        case (FOUND):
-        {
-            assert (stk.size);
-            printf ("%s - это ", who);
-
-            if (stk.size == 1)
-            {
-                printf ("%s. Ни добавить, ни взять.\n");
-                break;
-            }
-
-            element* elem_write = StackPop (&stk);
-            element* elem_help = StackPop (&stk);
-
-            while (stk.size > 0 && stk.status_error == STK_GOOD)
-            {
-                PropertyPrint (elem_write, elem_help, ", ");
-                elem_write = elem_help;
-                elem_help = StackPop (&stk);
-            }
-
-            if (stk.status_error != STK_GOOD)
-            {
-                printf ("Произошла ошибка стека на этапе вывода. Номер ошибки: %d."
-                    " Обратитесь к разработчику.\n", stk.status_error);
-                break;
-            }
-
-            PropertyPrint (elem_write, elem_help, ".\n");
-            break;
-        }
-
-        case (NOT_FOUND):
-            printf ("Извините, я не знаю, кто (что) это.\n");
-            break;
-
-        case (STACK_ERR):
-            printf ("Произошла ошибка стека. Номер ошибки: %d."
-                    " Обратитесь к разработчику.\n", stk.status_error);
-            break;
-
-        case (TREE_ERR):
-            tree_error_printf;
-    }
-
+    if (result == FOUND)
+        AllPropertiesPrint (&stk, who);
+    else
+        Modes23PrintError (result);
+    
     StackDestructor (&stk);
     return;
 }
 
 void Compare (Tree* gt)
 {
+    assert (gt);
+    assert (gt->head);
 
+    printf ("\n""Скажите, какие 2 предмета (ну или кого уж там) вам нужно сравнить?\n"
+        "Введите первое название: ");
+
+    Stack stk1 = {};
+    StackConstructor (&stk1, TREE_DEEP);
+
+    char who1[BUF_SIZE] = "";
+    gets_s (who1, BUF_SIZE);
+
+    FIND_RES result = FindElem (who1, &stk1, gt->head);
+
+    if (result == FOUND)
+    {
+        printf ("Введите второе название: ");
+
+        char who2[BUF_SIZE] = "";
+        gets_s (who2, BUF_SIZE);
+
+        if (strcmp (who1, who2))
+        {
+            Stack stk2 = {};
+            StackConstructor (&stk2, TREE_DEEP);
+            result = FindElem (who2, &stk2, gt->head);
+
+            if (result == FOUND)
+                CompareElements (&stk1, &stk2, who1, who2);
+
+            StackDestructor (&stk2);
+        }
+        else
+            printf ("Сравнивайте одно и то же в режиме определения, пожалуйста.\n");
+    }
+
+    StackDestructor (&stk1);
+    Modes23PrintError (result);
+    return;
 }
 
 void SaveTree (Tree* gt)
@@ -532,6 +463,104 @@ int GetNode (char* str, const char symb)
     return 0;
 }
 
+int AskObject (element* elem_now, char* ans, Tree* gt)
+{
+    assert (elem_now);
+    assert (ans);
+    assert (gt);
+
+    printf ("Это %s?\n", elem_now->str);
+    gets_s (ans, BUF_SIZE);
+
+    if (strcmp (ans, "да") == 0)
+    {
+        printf ("Оно и верно, я ведь всё могу угадать!\n");
+        return 1;
+    }
+
+    if (strcmp (ans, "нет") == 0)
+    {
+        AddAnswer (gt, elem_now);
+        return 1;
+    }
+
+    if (strcmp (ans, "выход") == 0)
+        return 1;
+
+    printf ("Неопознанная команда!\n");
+    return 0;
+}
+
+void AddAnswer (Tree* gt, element* elem_now)
+{
+    assert (gt);
+    assert (elem_now);
+
+    char new_item[BUF_SIZE] = "";
+    int bad_input = 0;
+
+    do
+    {
+        if (bad_input)
+            printf ("Недопустимый ввод: строка оказалась пустой или содержащей символ \"`\".\n"
+                    "Пожалуйста, повторите ввод.\n");
+        
+        printf ("\n""А кто это был тогда?\n");
+        gets_s (new_item, BUF_SIZE);
+
+        bad_input = 1;
+    } 
+    while (strchr (new_item, '`') || !new_item[0]);
+
+    InsertRight (gt, elem_now, new_item);
+    bad_input = 0;
+
+    do
+    {
+        if (bad_input)
+            printf ("Недопустимый ввод: строка оказалась пустой или содержащей символ \"?\".\n"
+                    "Пожалуйста, повторите ввод.\n");
+        
+        printf ("А чем %s отличается от %s? Введите, пожалуйста, характерный признак.\n"
+                "Он (она, оно, они)... \n",
+                new_item, elem_now->str);
+        gets_s (new_item, BUF_SIZE);
+
+        bad_input = 1;
+    } 
+    while (strchr (new_item, '?') || !new_item[0]);
+
+    InsertLeft (gt, elem_now, new_item);
+
+    char* str_swap = elem_now->str;
+    elem_now->str = elem_now->left->str;
+    elem_now->left->str = str_swap;
+
+    printf ("Спасибо, я запомнил!\n");
+    return;
+}
+
+element* AskProperty (element* elem_now, char* ans)
+{
+    assert (elem_now);
+    assert (ans);
+
+    printf ("Это можно охарактеризовать как \"%s\"?\n", elem_now->str);
+    gets_s (ans, BUF_SIZE);
+
+    if (strcmp (ans, "да") == 0)
+        return elem_now->right;
+
+    if (strcmp (ans, "нет") == 0)
+        return elem_now->left;
+
+    if (strcmp (ans, "выход") == 0)
+        return nullptr;
+
+    printf ("Неопознанная команда!\n");
+    return elem_now;
+}
+
 FIND_RES FindElem (const char* str, Stack* stk, element* elem_now)
 {
     assert (str);
@@ -571,11 +600,46 @@ FIND_RES FindElem (const char* str, Stack* stk, element* elem_now)
     return next_find;
 }
 
+int AllPropertiesPrint (Stack* stk, const char* who)
+{
+    assert (stk);
+    assert (who);
+    assert (stk->size);
+
+    printf ("%s - это ", who);
+
+    if (stk->size == 1)
+    {
+        printf ("%s. Ни добавить, ни взять.\n", StackPop (stk)->str);
+        return 1;
+    }
+
+    element* elem_write = StackPop (stk);
+    element* elem_help = StackPop (stk);
+
+    while (stk->size > 0 && stk->status_error == STK_GOOD)
+    {
+        PropertyPrint (elem_write, elem_help, ", ");
+        elem_write = elem_help;
+        elem_help = StackPop (stk);
+    }
+
+    if (stk->status_error != STK_GOOD)
+    {
+        printf ("Произошла ошибка стека на этапе вывода. Номер ошибки: %d."
+            " Обратитесь к разработчику.\n", stk->status_error);
+        return 1;
+    }
+
+    PropertyPrint (elem_write, elem_help, ".\n");
+    return 0;
+}
+
 int PropertyPrint (element* elem_write, element* elem_help, const char* end)
 {
     assert (elem_write);
     assert (elem_help);
-    
+
     if (elem_write->left == nullptr || elem_write->right == nullptr)
         return 1;
 
@@ -587,4 +651,62 @@ int PropertyPrint (element* elem_write, element* elem_help, const char* end)
         return 1;
 
     return 0;
+}
+
+void Modes23PrintError (FIND_RES result)
+{
+    switch (result)
+    {
+        case (NOT_FOUND):
+            printf ("Извините, я не знаю, кто (что) это.\n");
+            break;
+
+        case (STACK_ERR):
+            printf ("Произошла ошибка стека. Обратитесь к разработчику.\n");
+            break;
+
+        case (TREE_ERR):
+            tree_error_printf;
+    }
+
+    return;
+}
+
+void CompareElements (Stack* stk1, Stack* stk2, const char* who1, const char* who2)
+{
+    assert (stk1);
+    assert (stk2);
+    assert (who1);
+    assert (who2);
+    assert (stk1->size > 1);
+    assert (stk2->size > 1);
+
+    printf ("%s и %s ", who1, who2);
+
+    element* elem_write  = StackPop (stk1);
+    element* elem_help1  = StackPop (stk1);
+    assert  (elem_write == StackPop (stk2));
+    element* elem_help2  = StackPop (stk2);
+
+    if (elem_help1 == elem_help2)
+    {
+        printf ("схожи тем, что ");
+
+        while (elem_help1 == elem_help2)
+        {
+            PropertyPrint (elem_write, elem_help1, ", ");
+            
+            elem_write = elem_help1;
+            elem_help1 = StackPop (stk1);
+            elem_help2 = StackPop (stk2);
+        }
+
+        printf ("но ");
+    }
+    else
+        printf ("отличаются тем, что ");
+
+    printf ("%s %s, а %s - нет.\n",     
+            elem_write->right->str, elem_write->str, elem_write->left->str);
+    return;
 }
