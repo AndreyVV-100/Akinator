@@ -140,9 +140,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Akinator.cpp" />
+    <ClCompile Include="Libraries\Stack\Stack.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Akinator.h" />
+    <ClInclude Include="Libraries\Stack\Stack.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

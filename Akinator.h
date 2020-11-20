@@ -44,7 +44,23 @@
                             *no_slash_n = '\0';                 \
                     }
 
-const size_t BUF_SIZE = 256;
+#define tree_error_printf {                                                                      \
+                          printf ("\n""Ошибка: дерево повреждено. Обратитесь к разработчику.\n");\
+                          break;                                                                 \
+                          }
+
+const size_t BUF_SIZE  = 256;
+const size_t TREE_DEEP = 256;
+
+enum FIND_RES
+{
+    NOT_FOUND  = 0,
+    FOUND      = 1,
+    STACK_ERR  = 2,
+    TREE_ERR   = 3
+};
+
+struct Stack;
 
 struct element
 {
@@ -95,3 +111,7 @@ void OpenTree (Tree* gt);
 element* OpenBranch (Tree* gt, size_t last_tab, FILE* tree);
 
 int GetNode (char* str, const char symb);
+
+FIND_RES FindElem (const char* str, Stack* stk, element* elem_now);
+
+int PropertyPrint (element* elem_write, element* elem_help, const char* end);

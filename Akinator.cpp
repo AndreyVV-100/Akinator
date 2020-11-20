@@ -1,4 +1,5 @@
 ﻿#include "Akinator.h"
+#include "Libraries/Stack/Stack.h"
 
 int main ()
 {
@@ -216,6 +217,7 @@ int ElementDump (FILE* graph, element* el, size_t* passed_elems, size_t size)
     return 0;
 }
 
+// ToDo: Разбить на функции
 void Guessing (Tree* gt)
 {
     assert (gt);
@@ -315,7 +317,69 @@ void AddAnswer (Tree* gt, element* elem_now)
 
 void Definition (Tree* gt)
 {
+    assert (gt);
+    assert (gt->head);
+    
+    printf ("\n""Скажите, для кого (чего) вам нужно сделать описание - и я его сделаю!\n"
+            "Введите название: ");
 
+    Stack stk = {};
+    StackConstructor (&stk, TREE_DEEP);
+
+    char who[BUF_SIZE] = "";
+    gets_s (who, BUF_SIZE);
+
+    FIND_RES result = FindElem (who, &stk, gt->head);
+
+    switch (result)
+    {
+        case (FOUND):
+        {
+            assert (stk.size);
+            printf ("%s - это ", who);
+
+            if (stk.size == 1)
+            {
+                printf ("%s. Ни добавить, ни взять.\n");
+                break;
+            }
+
+            element* elem_write = StackPop (&stk);
+            element* elem_help = StackPop (&stk);
+
+            while (stk.size > 0 && stk.status_error == STK_GOOD)
+            {
+                PropertyPrint (elem_write, elem_help, ", ");
+                elem_write = elem_help;
+                elem_help = StackPop (&stk);
+            }
+
+            if (stk.status_error != STK_GOOD)
+            {
+                printf ("Произошла ошибка стека на этапе вывода. Номер ошибки: %d."
+                    " Обратитесь к разработчику.\n", stk.status_error);
+                break;
+            }
+
+            PropertyPrint (elem_write, elem_help, ".\n");
+            break;
+        }
+
+        case (NOT_FOUND):
+            printf ("Извините, я не знаю, кто (что) это.\n");
+            break;
+
+        case (STACK_ERR):
+            printf ("Произошла ошибка стека. Номер ошибки: %d."
+                    " Обратитесь к разработчику.\n", stk.status_error);
+            break;
+
+        case (TREE_ERR):
+            tree_error_printf;
+    }
+
+    StackDestructor (&stk);
+    return;
 }
 
 void Compare (Tree* gt)
@@ -464,6 +528,63 @@ int GetNode (char* str, const char symb)
 
     *str   = '\0';
     *check = '\0';
+
+    return 0;
+}
+
+FIND_RES FindElem (const char* str, Stack* stk, element* elem_now)
+{
+    assert (str);
+    assert (stk);
+    assert (elem_now);
+
+    if (elem_now->left == nullptr && elem_now->right == nullptr)
+    {
+        if (strcmp (str, elem_now->str))
+            return NOT_FOUND;
+        StackPush (stk, elem_now);
+        return FOUND;
+    }
+
+    if (elem_now->left == nullptr || elem_now->right == nullptr)
+        return TREE_ERR;
+
+    FIND_RES next_find = FindElem (str, stk, elem_now->left);
+
+    if (next_find == FOUND)
+    {
+        StackPush (stk, elem_now);
+        if (stk->status_error != STK_GOOD)
+            next_find = STACK_ERR;
+    }
+    if (next_find != NOT_FOUND)
+        return next_find;
+
+    next_find = FindElem (str, stk, elem_now->right);
+
+    if (next_find == FOUND)
+    {
+        StackPush (stk, elem_now);
+        if (stk->status_error != STK_GOOD)
+            next_find = STACK_ERR;
+    }
+    return next_find;
+}
+
+int PropertyPrint (element* elem_write, element* elem_help, const char* end)
+{
+    assert (elem_write);
+    assert (elem_help);
+    
+    if (elem_write->left == nullptr || elem_write->right == nullptr)
+        return 1;
+
+    if (elem_write->left == elem_help)
+        printf ("не %s%s", elem_write->str, end);
+    else if (elem_write->right == elem_help)
+        printf ("%s%s", elem_write->str, end);
+    else
+        return 1;
 
     return 0;
 }
