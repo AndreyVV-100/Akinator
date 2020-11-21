@@ -123,22 +123,21 @@ void ElementDestructor (element* el)
 {
     assert (el);
 
-    if (el->left != nullptr)
-    {
-        ElementDestructor (el->left);
-        el->left = nullptr;
-    }
-
-    if (el->right != nullptr)
-    {
-        ElementDestructor (el->right);
-        el->right = nullptr;
-    }
+    element* left  = el->left;
+    element* right = el->right;
 
     free (el->str);
-    el->str  = nullptr;
-    el->prev = nullptr;
+    el->str   = nullptr;
+    el->prev  = nullptr;
+    el->left  = nullptr;
+    el->right = nullptr;
     free (el);
+
+    if (left != nullptr)
+        ElementDestructor (left);
+
+    if (right != nullptr)
+        ElementDestructor (right);
 
     return;
 }
@@ -472,10 +471,7 @@ element* OpenBranch (Tree* gt, size_t last_tab, FILE* tree)
     skip_tabs (tab2);
     if (tab1 != tab2 || strcmp (str + tab2, "]"))
     {
-        Tree free_tree = {};
-        TreeConstructor (&free_tree);
-        free_tree.head = el;
-        TreeDestructor (&free_tree);
+        ElementDestructor (el);
         return nullptr;
     }
     gt->size += 1;
