@@ -17,7 +17,7 @@ int main ()
     setlocale (LC_ALL, "");
 
     printf ("Здравстуйте! Вас приветствует игра Акинатор!\n");
-    txSpeak ("Здравствуйте!");
+    Speak (1, "Здравствуйте!");
 
     Tree game_tree = {};
     TreeConstructor (&game_tree);
@@ -35,7 +35,7 @@ int main ()
                 "5 - Сделать сохранение\n"
                 "6 - Выход\n"
                 "7 - Включить или отключить озвучку\n");
-        speak ("Выберете режим");
+        Speak (1, "Выберете режим");
 
         int mode = -1;
         char inp[BUF_SIZE] = "";
@@ -61,7 +61,7 @@ int main ()
                 break;
             case (6):
                 printf ("Выход из игры...");
-                speak ("Выход...");
+                Speak (1, "Выход...");
                 game_continue = 0;
                 break;
             case (7):
@@ -72,7 +72,7 @@ int main ()
                 break;
             default:
                 printf ("Неопознанная команда!\n");
-                speak ("Ошибка!");
+                Speak (1, "Ошибка!");
                 break;
         }
     }
@@ -202,7 +202,7 @@ void CreateDump (Tree* tree)
     system ("dot -Tpng Graph\\outUTF.dot -o Graph\\gr.png");
     system ("start Graph\\gr.png");
 
-    speak ("Вот дерево!");
+    Speak (1, "Вот дерево!");
 
     return;
 }
@@ -238,6 +238,52 @@ int ElementDump (FILE* graph, element* el, size_t* passed_elems, size_t size)
     return 0;
 }
 
+void Speak (int num_str, ...)
+{
+    if (SOUND == ON)
+    {
+        va_list speaking;
+        va_start (speaking, num_str);
+
+        if (num_str == 1)
+            txSpeak (va_arg (speaking, const char*));
+        else
+        {
+            const size_t max_all_size = 1024;
+            char str[max_all_size] = "";
+            size_t symb_now = 0;
+
+            for (size_t i = 0; i < num_str; i++)
+            {
+                #define check_len   if (symb_now >= max_all_size)           \
+                                    {                                       \
+                                        txSpeak ("Слишком длинная речь!");  \
+                                        return;                             \
+                                    }
+
+                const char* arg = va_arg (speaking, const char*);
+                while (*arg != '\0')
+                {
+                    check_len;
+                    str[symb_now] = *arg;
+                    symb_now++;
+                    arg++;
+                }
+                check_len;
+                str[symb_now] = ' ';
+                symb_now++;
+            }
+            check_len;
+            #undef check_len
+            str[symb_now] = '\0';
+
+            txSpeak (str);
+        }
+        va_end (speaking);
+    }
+    return;
+}
+
 void Guessing (Tree* gt)
 {
     assert (gt);
@@ -245,7 +291,7 @@ void Guessing (Tree* gt)
 
     printf ("\n""Загадайте кого-нибудь (ну или что-нибудь)...\n"
             "Отвечайте на вопросы словами \"да\", \"нет\" или \"выход\"\n\n");
-    speak ("Загадывайте!");
+    Speak (1, "Загадывайте!");
 
     element* elem_now = gt->head;
 
@@ -263,7 +309,7 @@ void Guessing (Tree* gt)
         if (elem_now->left == nullptr || elem_now->right == nullptr)
         {
             printf ("Что-то пошло не так...\n");
-            speak ("Ошибка!");
+            Speak (1, "Ошибка!");
             return;
         }
 
@@ -280,7 +326,7 @@ void Definition (Tree* gt)
     
     printf ("\n""Скажите, для кого (чего) вам нужно сделать описание - и я его сделаю!\n"
             "Введите название: ");
-    speak ("О ком рассказать?");
+    Speak (1, "О ком рассказать?");
 
     Stack stk = {};
     StackConstructor (&stk, TREE_DEEP);
@@ -306,7 +352,7 @@ void Compare (Tree* gt)
 
     printf ("\n""Скажите, какие 2 предмета (ну или кого уж там) вам нужно сравнить?\n"
         "Введите первое название: ");
-    speak ("Кого сравнить?");
+    Speak (1, "Кого сравнить?");
 
     Stack stk1 = {};
     StackConstructor (&stk1, TREE_DEEP);
@@ -337,7 +383,7 @@ void Compare (Tree* gt)
         else
         {
             printf ("Сравнивайте одно и то же в режиме определения, пожалуйста.\n");
-            speak ("Ошибка");
+            Speak (1, "Ошибка");
         }
     }
 
@@ -350,7 +396,7 @@ void SaveTree (Tree* gt)
 {
     assert (gt);
 
-    speak ("Сохраняюсь...");
+    Speak (1, "Сохраняюсь...");
 
     FILE* tree = fopen ("Graph/tree.txt", "w");
     assert (tree);
@@ -359,12 +405,12 @@ void SaveTree (Tree* gt)
     if (SaveBranch (gt->head, tree, 0))
     {
         printf ("Ошибка, сохранения. Плак...\n");
-        speak  ("Ошибка!");
+        Speak  (1, "Ошибка!");
     }
     else
     {
         printf ("Сохранение прошло успешно!\n");
-        speak  ("Успешно!");
+        Speak  (1, "Успешно!");
     }
 
     fclose (tree);
@@ -503,15 +549,14 @@ int AskObject (element* elem_now, char* ans, Tree* gt)
     assert (gt);
 
     printf ("Это %s?\n", elem_now->str);
-    speak ("Это");
-    speak (elem_now->str);
+    Speak (2, "Это", elem_now->str);
 
     gets_s (ans, BUF_SIZE);
 
     if (strcmp (ans, "да") == 0)
     {
         printf ("Оно и верно, я ведь всё могу угадать!\n");
-        speak ("Ура!");
+        Speak (1, "Ура!");
         return 1;
     }
 
@@ -523,12 +568,12 @@ int AskObject (element* elem_now, char* ans, Tree* gt)
 
     if (strcmp (ans, "выход") == 0)
     {
-        speak ("Выход");
+        Speak (1, "Выход");
         return 1;
     }
 
     printf ("Неопознанная команда!\n");
-    speak ("Ошибка!");
+    Speak (1, "Ошибка!");
     return 0;
 }
 
@@ -546,11 +591,11 @@ void AddAnswer (Tree* gt, element* elem_now)
         {
             printf ("Недопустимый ввод: строка оказалась пустой или содержащей символ \"`\".\n"
                     "Пожалуйста, повторите ввод.\n");
-            speak ("Ошибка!");
+            Speak (1, "Ошибка!");
         }
         
         printf ("\n""А кто это был тогда?\n");
-        speak ("Кто это?");
+        Speak (1, "Кто это?");
         gets_s (new_item, BUF_SIZE);
 
         bad_input = 1;
@@ -566,13 +611,13 @@ void AddAnswer (Tree* gt, element* elem_now)
         {
             printf ("Недопустимый ввод: строка оказалась пустой или содержащей символ \"?\".\n"
                     "Пожалуйста, повторите ввод.\n");
-            speak ("Ошибка!");
+            Speak (1, "Ошибка!");
         }
         
         printf ("А чем %s отличается от %s? Введите, пожалуйста, характерный признак.\n"
                 "Он (она, оно, они)... \n",
                 new_item, elem_now->str);
-        speak ("А в чём различие?");
+        Speak (1, "А в чём различие?");
         gets_s (new_item, BUF_SIZE);
 
         bad_input = 1;
@@ -586,7 +631,7 @@ void AddAnswer (Tree* gt, element* elem_now)
     elem_now->left->str = str_swap;
 
     printf ("Спасибо, я запомнил!\n");
-    speak ("Спасибо!");
+    Speak (1, "Спасибо!");
     return;
 }
 
@@ -596,8 +641,7 @@ element* AskProperty (element* elem_now, char* ans)
     assert (ans);
 
     printf ("Это можно охарактеризовать как \"%s\"?\n", elem_now->str);
-    speak ("Оно ");
-    speak (elem_now->str);
+    Speak (2, "Оно ", elem_now->str);
     gets_s (ans, BUF_SIZE);
 
     if (strcmp (ans, "да") == 0)
@@ -608,12 +652,12 @@ element* AskProperty (element* elem_now, char* ans)
 
     if (strcmp (ans, "выход") == 0)
     {
-        speak ("Выход");
+        Speak (1, "Выход");
         return nullptr;
     }
 
     printf ("Неопознанная команда!\n");
-    speak  ("Ошибка!");
+    Speak  (1, "Ошибка!");
     return elem_now;
 }
 
@@ -663,14 +707,13 @@ int AllPropertiesPrint (Stack* stk, const char* who)
     assert (stk->size);
 
     printf ("%s - это ", who);
-    speak (who);
-    speak ("это");
+    Speak (2, who, "это");
 
     if (stk->size == 1)
     {
         who = StackPop (stk)->str;
         printf ("%s. Ни добавить, ни взять.\n", who);
-        speak (who);
+        Speak (1, who);
         return 1;
     }
 
@@ -688,7 +731,7 @@ int AllPropertiesPrint (Stack* stk, const char* who)
     {
         printf ("Произошла ошибка стека на этапе вывода. Номер ошибки: %d."
             " Обратитесь к разработчику.\n", stk->status_error);
-        speak ("Ошибка");
+        Speak (1, "Ошибка");
         return 1;
     }
 
@@ -707,13 +750,12 @@ int PropertyPrint (element* elem_write, element* elem_help, const char* end)
     if (elem_write->left == elem_help)
     {
         printf ("не %s%s", elem_write->str, end);
-        speak ("не");
-        speak (elem_write->str);
+        Speak (2, "не", elem_write->str);
     }
     else if (elem_write->right == elem_help)
     {
         printf ("%s%s", elem_write->str, end);
-        speak (elem_write->str);
+        Speak (1, elem_write->str);
     }
     else
         return 1;
@@ -727,16 +769,16 @@ void Modes23PrintError (FIND_RES result)
     {
         case (NOT_FOUND):
             printf ("Извините, я не знаю, кто (что) это.\n");
-            speak ("Не знаю его!");
+            Speak (1, "Не знаю его!");
             break;
 
         case (STACK_ERR):
             printf ("Произошла ошибка стека. Обратитесь к разработчику.\n");
-            speak ("Ошибка!");
+            Speak (1, "Ошибка!");
             break;
 
         case (TREE_ERR):
-            speak ("Ошибка!");
+            Speak (1, "Ошибка!");
             tree_error_printf;
     }
 
@@ -753,9 +795,7 @@ void CompareElements (Stack* stk1, Stack* stk2, const char* who1, const char* wh
     assert (stk2->size > 1);
 
     printf ("%s и %s ", who1, who2);
-    speak (who1);
-    speak ("и");
-    speak (who2);
+    Speak (3, who1, "и", who2);
 
     element* elem_write  = StackPop (stk1);
     element* elem_help1  = StackPop (stk1);
@@ -765,7 +805,7 @@ void CompareElements (Stack* stk1, Stack* stk2, const char* who1, const char* wh
     if (elem_help1 == elem_help2)
     {
         printf ("схожи тем, что ");
-        speak  ("схожи тем, что ");
+        Speak  (1, "схожи тем, что ");
 
         while (elem_help1 == elem_help2)
         {
@@ -777,21 +817,17 @@ void CompareElements (Stack* stk1, Stack* stk2, const char* who1, const char* wh
         }
 
         printf ("но ");
-        speak  ("но");
+        Speak  (1, "но");
     }
     else
     {
         printf ("отличаются тем, что ");
-        speak  ("отличаются тем, что ");
+        Speak  (1, "отличаются тем, что ");
     }
 
     printf ("%s %s, а %s - нет.\n",     
             elem_write->right->str, elem_write->str, elem_write->left->str);
-    speak (elem_write->right->str);
-    speak (elem_write->str);
-    speak ("а");
-    speak (elem_write->left->str);
-    speak ("нет");
+    Speak (5, elem_write->right->str, elem_write->str, "а", elem_write->left->str, "нет");
 
     return;
 }

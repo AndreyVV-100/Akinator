@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <assert.h>
 #include <string.h>
 #include <locale.h>
@@ -51,11 +52,6 @@
                           break;                                                                 \
                           }
 
-#define speak(str)  if (SOUND == ON)    \
-                    {                   \
-                        txSpeak (str);  \
-                    }
-
 const size_t BUF_SIZE  = 256;
 const size_t TREE_DEEP = 256;
 
@@ -100,6 +96,8 @@ element* InsertRight (Tree* tree, element* el, const char* str);
 void CreateDump (Tree* tree);
 
 int ElementDump (FILE* graph, element* el, size_t* passed_elems, size_t size);
+
+void Speak (int n, ...);
 
 void Guessing (Tree* gt);
 
