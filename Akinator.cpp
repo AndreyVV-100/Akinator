@@ -1,13 +1,23 @@
 ﻿#include "Akinator.h"
 #include "Libraries/Stack/Stack.h"
 
+enum SOUND_WORK
+{
+    OFF = 0,
+    ON = 1
+};
+
+SOUND_WORK SOUND = ON;
+
 int main ()
 {
+    txDisableAutoPause ();
     SetConsoleCP (1251);
     SetConsoleOutputCP (1251);
     setlocale (LC_ALL, "");
 
     printf ("Здравстуйте! Вас приветствует игра Акинатор!\n");
+    txSpeak ("Здравствуйте!");
 
     Tree game_tree = {};
     TreeConstructor (&game_tree);
@@ -23,7 +33,9 @@ int main ()
                 "3 - Сравнение\n"
                 "4 - Графическое представление результата\n"
                 "5 - Сделать сохранение\n"
-                "6 - Выход\n");
+                "6 - Выход\n"
+                "7 - Включить или отключить озвучку\n");
+        speak ("Выберете режим");
 
         int mode = -1;
         char inp[BUF_SIZE] = "";
@@ -49,10 +61,18 @@ int main ()
                 break;
             case (6):
                 printf ("Выход из игры...");
+                speak ("Выход...");
                 game_continue = 0;
+                break;
+            case (7):
+                if (SOUND == ON)
+                    SOUND = OFF;
+                else
+                    SOUND = ON;
                 break;
             default:
                 printf ("Неопознанная команда!\n");
+                speak ("Ошибка!");
                 break;
         }
     }
@@ -183,6 +203,8 @@ void CreateDump (Tree* tree)
     system ("dot -Tpng Graph\\outUTF.dot -o Graph\\gr.png");
     system ("start Graph\\gr.png");
 
+    speak ("Вот дерево!");
+
     return;
 }
 
@@ -224,6 +246,7 @@ void Guessing (Tree* gt)
 
     printf ("\n""Загадайте кого-нибудь (ну или что-нибудь)...\n"
             "Отвечайте на вопросы словами \"да\", \"нет\" или \"выход\"\n\n");
+    speak ("Загадывайте!");
 
     element* elem_now = gt->head;
 
@@ -241,6 +264,7 @@ void Guessing (Tree* gt)
         if (elem_now->left == nullptr || elem_now->right == nullptr)
         {
             printf ("Что-то пошло не так...\n");
+            speak ("Ошибка!");
             return;
         }
 
@@ -257,6 +281,7 @@ void Definition (Tree* gt)
     
     printf ("\n""Скажите, для кого (чего) вам нужно сделать описание - и я его сделаю!\n"
             "Введите название: ");
+    speak ("О ком рассказать?");
 
     Stack stk = {};
     StackConstructor (&stk, TREE_DEEP);
@@ -282,6 +307,7 @@ void Compare (Tree* gt)
 
     printf ("\n""Скажите, какие 2 предмета (ну или кого уж там) вам нужно сравнить?\n"
         "Введите первое название: ");
+    speak ("Кого сравнить?");
 
     Stack stk1 = {};
     StackConstructor (&stk1, TREE_DEEP);
@@ -310,7 +336,10 @@ void Compare (Tree* gt)
             StackDestructor (&stk2);
         }
         else
+        {
             printf ("Сравнивайте одно и то же в режиме определения, пожалуйста.\n");
+            speak ("Ошибка");
+        }
     }
 
     StackDestructor (&stk1);
@@ -322,14 +351,22 @@ void SaveTree (Tree* gt)
 {
     assert (gt);
 
+    speak ("Сохраняюсь...");
+
     FILE* tree = fopen ("Graph/tree.txt", "w");
     assert (tree);
 
     fprintf (tree, "{DESCR}\n{version 1.0}\n{RUS}\n");
     if (SaveBranch (gt->head, tree, 0))
+    {
         printf ("Ошибка, сохранения. Плак...\n");
+        speak  ("Ошибка!");
+    }
     else
+    {
         printf ("Сохранение прошло успешно!\n");
+        speak  ("Успешно!");
+    }
 
     fclose (tree);
     return;
@@ -470,11 +507,15 @@ int AskObject (element* elem_now, char* ans, Tree* gt)
     assert (gt);
 
     printf ("Это %s?\n", elem_now->str);
+    speak ("Это");
+    speak (elem_now->str);
+
     gets_s (ans, BUF_SIZE);
 
     if (strcmp (ans, "да") == 0)
     {
         printf ("Оно и верно, я ведь всё могу угадать!\n");
+        speak ("Ура!");
         return 1;
     }
 
@@ -485,9 +526,13 @@ int AskObject (element* elem_now, char* ans, Tree* gt)
     }
 
     if (strcmp (ans, "выход") == 0)
+    {
+        speak ("Выход");
         return 1;
+    }
 
     printf ("Неопознанная команда!\n");
+    speak ("Ошибка!");
     return 0;
 }
 
@@ -502,10 +547,14 @@ void AddAnswer (Tree* gt, element* elem_now)
     do
     {
         if (bad_input)
+        {
             printf ("Недопустимый ввод: строка оказалась пустой или содержащей символ \"`\".\n"
                     "Пожалуйста, повторите ввод.\n");
+            speak ("Ошибка!");
+        }
         
         printf ("\n""А кто это был тогда?\n");
+        speak ("Кто это?");
         gets_s (new_item, BUF_SIZE);
 
         bad_input = 1;
@@ -518,12 +567,16 @@ void AddAnswer (Tree* gt, element* elem_now)
     do
     {
         if (bad_input)
+        {
             printf ("Недопустимый ввод: строка оказалась пустой или содержащей символ \"?\".\n"
                     "Пожалуйста, повторите ввод.\n");
+            speak ("Ошибка!");
+        }
         
         printf ("А чем %s отличается от %s? Введите, пожалуйста, характерный признак.\n"
                 "Он (она, оно, они)... \n",
                 new_item, elem_now->str);
+        speak ("А в чём различие?");
         gets_s (new_item, BUF_SIZE);
 
         bad_input = 1;
@@ -537,6 +590,7 @@ void AddAnswer (Tree* gt, element* elem_now)
     elem_now->left->str = str_swap;
 
     printf ("Спасибо, я запомнил!\n");
+    speak ("Спасибо!");
     return;
 }
 
@@ -546,6 +600,8 @@ element* AskProperty (element* elem_now, char* ans)
     assert (ans);
 
     printf ("Это можно охарактеризовать как \"%s\"?\n", elem_now->str);
+    speak ("Оно ");
+    speak (elem_now->str);
     gets_s (ans, BUF_SIZE);
 
     if (strcmp (ans, "да") == 0)
@@ -555,9 +611,13 @@ element* AskProperty (element* elem_now, char* ans)
         return elem_now->left;
 
     if (strcmp (ans, "выход") == 0)
+    {
+        speak ("Выход");
         return nullptr;
+    }
 
     printf ("Неопознанная команда!\n");
+    speak  ("Ошибка!");
     return elem_now;
 }
 
@@ -607,10 +667,14 @@ int AllPropertiesPrint (Stack* stk, const char* who)
     assert (stk->size);
 
     printf ("%s - это ", who);
+    speak (who);
+    speak ("это");
 
     if (stk->size == 1)
     {
-        printf ("%s. Ни добавить, ни взять.\n", StackPop (stk)->str);
+        who = StackPop (stk)->str;
+        printf ("%s. Ни добавить, ни взять.\n", who);
+        speak (who);
         return 1;
     }
 
@@ -628,6 +692,7 @@ int AllPropertiesPrint (Stack* stk, const char* who)
     {
         printf ("Произошла ошибка стека на этапе вывода. Номер ошибки: %d."
             " Обратитесь к разработчику.\n", stk->status_error);
+        speak ("Ошибка");
         return 1;
     }
 
@@ -644,9 +709,16 @@ int PropertyPrint (element* elem_write, element* elem_help, const char* end)
         return 1;
 
     if (elem_write->left == elem_help)
+    {
         printf ("не %s%s", elem_write->str, end);
+        speak ("не");
+        speak (elem_write->str);
+    }
     else if (elem_write->right == elem_help)
+    {
         printf ("%s%s", elem_write->str, end);
+        speak (elem_write->str);
+    }
     else
         return 1;
 
@@ -659,13 +731,16 @@ void Modes23PrintError (FIND_RES result)
     {
         case (NOT_FOUND):
             printf ("Извините, я не знаю, кто (что) это.\n");
+            speak ("Не знаю его!");
             break;
 
         case (STACK_ERR):
             printf ("Произошла ошибка стека. Обратитесь к разработчику.\n");
+            speak ("Ошибка!");
             break;
 
         case (TREE_ERR):
+            speak ("Ошибка!");
             tree_error_printf;
     }
 
@@ -682,6 +757,9 @@ void CompareElements (Stack* stk1, Stack* stk2, const char* who1, const char* wh
     assert (stk2->size > 1);
 
     printf ("%s и %s ", who1, who2);
+    speak (who1);
+    speak ("и");
+    speak (who2);
 
     element* elem_write  = StackPop (stk1);
     element* elem_help1  = StackPop (stk1);
@@ -691,6 +769,7 @@ void CompareElements (Stack* stk1, Stack* stk2, const char* who1, const char* wh
     if (elem_help1 == elem_help2)
     {
         printf ("схожи тем, что ");
+        speak  ("схожи тем, что ");
 
         while (elem_help1 == elem_help2)
         {
@@ -702,11 +781,21 @@ void CompareElements (Stack* stk1, Stack* stk2, const char* who1, const char* wh
         }
 
         printf ("но ");
+        speak  ("но");
     }
     else
+    {
         printf ("отличаются тем, что ");
+        speak  ("отличаются тем, что ");
+    }
 
     printf ("%s %s, а %s - нет.\n",     
             elem_write->right->str, elem_write->str, elem_write->left->str);
+    speak (elem_write->right->str);
+    speak (elem_write->str);
+    speak ("а");
+    speak (elem_write->left->str);
+    speak ("нет");
+
     return;
 }

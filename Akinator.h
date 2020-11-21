@@ -3,8 +3,9 @@
 #include <assert.h>
 #include <string.h>
 #include <locale.h>
+#define TX_USE_SPEAK
+#include "Libraries/TX/TXLib.h"
 #include <windows.h>
-#include <sapi.h>
 
 #pragma warning (disable : 4996)
 
@@ -49,6 +50,11 @@
                           printf ("\n""Ошибка: дерево повреждено. Обратитесь к разработчику.\n");\
                           break;                                                                 \
                           }
+
+#define speak(str)  if (SOUND == ON)    \
+                    {                   \
+                        txSpeak (str);  \
+                    }
 
 const size_t BUF_SIZE  = 256;
 const size_t TREE_DEEP = 256;
