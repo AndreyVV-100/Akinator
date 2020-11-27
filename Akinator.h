@@ -10,6 +10,8 @@
 
 #pragma warning (disable : 4996)
 
+#define Speak(...) FuncSpeak (__VA_ARGS__, nullptr)
+
 #define ass_ins_emp assert (tree);                  \
                     assert (str);                   \
                     assert (tree->head == nullptr); \
@@ -97,7 +99,7 @@ void CreateDump (Tree* tree);
 
 int ElementDump (FILE* graph, element* el, size_t* passed_elems, size_t size);
 
-void Speak (int n, ...);
+void FuncSpeak (const char* str0, ...);
 
 void Guessing (Tree* gt);
 
