@@ -323,7 +323,7 @@ void StackLog(Stack* stk)
 		*((storm*) (stk->buffer + stk->capacity)));
 	*/
 
-	for (int element = 0; element < stk->capacity; element++)
+	for (size_t element = 0; element < stk->capacity; element++)
 		fprintf (file, "[%d] = %p\n", element, stk->buffer[element]);
 
 	fprintf (file, "\n" "End of log.\n");
@@ -341,7 +341,7 @@ unsigned long long CountHash (char* buffer, size_t num)
 	for (size_t count = 0; count < num; count++)
 	{
 		ans += buffer[count];
-		buf = ans >> (sizeof (unsigned long long) - shift);
+		buf = (char) (ans >> (sizeof (unsigned long long) - shift));
 		ans = (ans << shift) + buf;
 	}
 

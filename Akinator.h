@@ -99,7 +99,9 @@ void CreateDump (Tree* tree);
 
 int ElementDump (FILE* graph, element* el, size_t* passed_elems, size_t size);
 
-void FuncSpeak (const char* str0, ...);
+void FuncSpeak (const char* first_str, ...);
+
+void SpeakFormat (const char* format, ...);
 
 void Guessing (Tree* gt);
 
@@ -132,3 +134,5 @@ int PropertyPrint (element* elem_write, element* elem_help, const char* end);
 void Modes23PrintError (FIND_RES result);
 
 void CompareElements (Stack* stk1, Stack* stk2, const char* who1, const char* who2);
+
+char* Stpcpy (char* copy_place, const char* copy_str);

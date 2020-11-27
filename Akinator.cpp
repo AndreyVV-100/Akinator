@@ -238,64 +238,70 @@ int ElementDump (FILE* graph, element* el, size_t* passed_elems, size_t size)
     return 0;
 }
 
-void FuncSpeak (const char* str0, ...)
+void FuncSpeak (const char* first_str, ...)
 {
-    if (SOUND == ON)
+    assert (first_str);
+    
+    if (SOUND == OFF)
+        return;
+
+    va_list speaking;
+    va_start (speaking, first_str);
+
+    const char* arg_now = va_arg (speaking, const char*);
+
+    if (!arg_now)
     {
-        va_list speaking;
-        va_start (speaking, str0);
-
-        const char* arg = va_arg (speaking, const char*);
-
-        if (!arg)
-        {
-            txSpeak (str0);
-            va_end (speaking);
-            return;
-        }
-        
-        const size_t max_all_size = 1024;
-        char str[max_all_size] = "";
-        size_t symb_now = 0;
-
-        #define check_len   if (symb_now >= max_all_size)           \
-                            {                                       \
-                                printf ("Слишком длинная речь!");   \
-                                return;                             \
-                            }
-
-        while (*str0 != '\0')
-        {
-            check_len;
-            str[symb_now] = *str0;
-            symb_now++;
-            str0++;
-        }
-
-        while (arg)
-        {
-            check_len;
-            str[symb_now] = ' ';
-            symb_now++;
-
-            while (*arg != '\0')
-            {
-                check_len;
-                str[symb_now] = *arg;
-                symb_now++;
-                arg++;
-            }
-
-            arg = va_arg (speaking, const char*);
-        }
-        check_len;
-        #undef check_len
-        str[symb_now] = '\0';
-
-        txSpeak (str);
-
+        txSpeak (first_str);
         va_end (speaking);
+        return;
     }
+    
+    const size_t max_size = 1024;
+    char union_str[max_size] = "";
+    char* union_position = union_str;
+
+    #define safe_insert(str) {                                                                  \
+                                if (union_position + strlen (str) + 2 > union_str + max_size)   \
+                                {                                                               \
+                                    txSpeak ("\vИзвините, это слишком длинная фраза.");         \
+                                    return;                                                     \
+                                }                                                               \
+                                union_position = Stpcpy (union_position, str);                  \
+                                union_position = Stpcpy (union_position, " ");                  \
+                             }
+
+    safe_insert (first_str);
+
+    while (arg_now)
+    {
+        safe_insert (arg_now);
+        arg_now = va_arg (speaking, const char*);
+    }
+
+    #undef safe_insert
+
+    txSpeak (union_str);
+    va_end (speaking);
+    return;
+}
+
+void SpeakFormat (const char* format, ...)
+{
+    assert (format);
+
+    if (SOUND == OFF)
+        return;
+
+    va_list speaking;
+    va_start (speaking, format);
+    const size_t max_size = 1024;
+    char union_str[max_size] = "";
+
+    vsprintf (union_str, format, speaking);
+    txSpeak (union_str);
+
+    va_end (speaking);
     return;
 }
 
@@ -852,4 +858,13 @@ void CompareElements (Stack* stk1, Stack* stk2, const char* who1, const char* wh
     AllPropertiesPrint (stk2, who2);
 
     return;
+}
+
+char* Stpcpy (char* copy_place, const char* copy_str)
+{
+    assert (copy_place);
+    assert (copy_str);
+    
+    strcpy (copy_place, copy_str);
+    return copy_place + strlen (copy_place);
 }
