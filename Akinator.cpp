@@ -281,7 +281,7 @@ void FuncSpeak (const char* first_str, ...)
 
     #undef safe_insert
 
-    txSpeak (union_str);
+    txSpeak ("%s", union_str);
     va_end (speaking);
     return;
 }
@@ -299,7 +299,7 @@ void SpeakFormat (const char* format, ...)
     char union_str[max_size] = "";
 
     vsprintf (union_str, format, speaking);
-    txSpeak (union_str);
+    txSpeak ("%s", union_str);
 
     va_end (speaking);
     return;
